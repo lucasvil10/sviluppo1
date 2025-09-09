@@ -1,0 +1,429 @@
+<div class="allenamento-container">
+  <div class="content-wrapper">
+  
+  <!-- Sezione Dati Utente e Logo -->
+  <div class="section user-data-section">
+    <h2>Dati Utente</h2>
+    <div class="user-form">
+      <div class="logo-upload">
+        <label for="logo-upload">Logo/Immagine:</label>
+        <input type="file" id="logo-upload" (change)="onLogoChange($event)" accept="image/*">
+        <div class="logo-preview" *ngIf="logoPreview">
+          <img [src]="logoPreview" alt="Logo preview">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="clientName">Nome:</label>
+          <input type="text" id="clientName" [(ngModel)]="schedaData.nomeCliente" placeholder="Inserisci nome">
+        </div>
+        <div class="form-group">
+          <label for="clientSurname">Cognome:</label>
+          <input type="text" id="clientSurname" [(ngModel)]="schedaData.cognomeCliente" placeholder="Inserisci cognome">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dataInizio">Data d'inizio:</label>
+          <input type="date" id="dataInizio" [(ngModel)]="schedaData.dataInizio">
+        </div>
+        <div class="form-group">
+          <label for="settimane">Settimane:</label>
+          <input type="number" id="settimane" [(ngModel)]="schedaData.settimane" min="1" max="52" placeholder="Numero settimane">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sezione Lavoro Aerobico -->
+  <div class="section aerobic-section">
+    <h2>Lavoro Aerobico</h2>
+    <div class="aerobic-form">
+      <div class="aerobic-exercises-grid">
+        <div class="exercise-card" *ngFor="let exercise of schedaData.lavoroAerobico; let i = index">
+          <div class="exercise-card-header">
+            <h4>{{ exercise.nome || 'Esercizio ' + (i + 1) }}</h4>
+            <div class="exercise-actions">
+              <button type="button" class="edit-btn" (click)="editEsercizioAerobico(i)" title="Modifica">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+                </svg>
+              </button>
+              <button type="button" class="remove-btn" (click)="removeEsercizioAerobico(i)" title="Rimuovi">×</button>
+            </div>
+          </div>
+          
+          <div class="exercise-card-content">
+            <div class="exercise-info">
+              <p class="duration-text"><strong>Durata:</strong> {{ exercise.durata }}</p>
+            </div>
+            <div class="exercise-image" *ngIf="exercise.imagePreview">
+              <img [src]="exercise.imagePreview" alt="Preview esercizio">
+            </div>
+
+            <!-- Sezione per le note degli esercizi aerobici -->
+            <div *ngIf="exercise.note && exercise.note.trim()" 
+                 class="aerobic-notes"
+                 [style.height.px]="calculateNoteHeight(exercise.note)">
+              {{ exercise.note }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <button type="button" class="add-btn" (click)="addEsercizioAerobico()" *ngIf="schedaData.lavoroAerobico.length < 3">
+        + Aggiungi Esercizio Aerobico
+      </button>
+    </div>
+  </div>
+
+  <!-- Sezione Circuiti -->
+  <div class="section training-days-section">
+    <h2>
+      <span class="circuit-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,15.87 15.87,19 12,19C8.47,19 5.57,16.39 5.08,13H2.05C2.56,17.84 6.81,21.5 12,21.5C17.52,21.5 22,17.02 22,11.5C22,6.32 18.34,2.07 13,2.05M12,7C9.24,7 7,9.24 7,12C7,14.76 9.24,17 12,17C14.76,17 17,14.76 17,12C17,9.24 14.76,7 12,7M12,15C10.35,15 9,13.65 9,12C9,10.35 10.35,9 12,9C13.65,9 15,10.35 15,12C15,13.65 13.65,15 12,15M11,8V12L13.83,13.91L14.5,12.91L12.5,11.5V8H11Z" />
+        </svg>
+      </span>
+      Circuiti di Allenamento
+    </h2>
+
+    <div class="training-days">
+      <div class="training-day" *ngFor="let circuito of schedaData.circuiti; let circuitIndex = index">
+        <div class="day-header">
+          <h3>{{ circuito.nome }}</h3>
+          <button type="button" class="remove-btn" (click)="removeCircuito(circuitIndex)" *ngIf="schedaData.circuiti.length > 1">×</button>
+        </div>
+        
+        <div class="form-group">
+          <label>Nome Circuito/Giorno:</label>
+          <input type="text" [(ngModel)]="circuito.nome" placeholder="Es. Giorno 1 - Petto e Tricipiti">
+        </div>
+
+        <div class="exercises">
+          <div class="exercises-grid">
+            <div class="exercise-card" *ngFor="let esercizio of circuito.esercizi; let exerciseIndex = index">
+              <div class="exercise-card-header">
+                <h5>{{ esercizio.nome || 'Esercizio ' + (exerciseIndex + 1) }}</h5>
+                <div class="exercise-actions">
+                  <button type="button" class="edit-btn" (click)="editEsercizioCircuito(circuitIndex, exerciseIndex)" title="Modifica">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                    </svg>
+                  </button>
+                  <button type="button" class="remove-btn" (click)="removeEsercizioCircuito(circuitIndex, exerciseIndex)" title="Rimuovi">×</button>
+                </div>
+              </div>
+              
+              <div class="exercise-card-content">
+                <div class="exercise-info">
+                  <p class="reps-text"><strong>Serie x Ripetizioni:</strong> {{ esercizio.serieRipetizioni }}</p>
+                  <p *ngIf="esercizio.recupero" class="recupero-text"><strong>Recupero:</strong> {{ esercizio.recupero }}</p>
+                </div>
+                <div class="exercise-image" *ngIf="esercizio.imagePreview">
+                  <img [src]="esercizio.imagePreview" alt="Preview esercizio">
+                </div>
+
+                <!-- Sezione per le note degli esercizi del circuito -->
+                <div *ngIf="esercizio.note && esercizio.note.trim()" 
+                     class="exercise-notes"
+                     [style.height.px]="calculateNoteHeight(esercizio.note)">
+                  {{ esercizio.note }}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <button type="button" class="add-exercise-btn" (click)="addEsercizioCircuito(circuitIndex)">
+            + Aggiungi Esercizio
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="days-controls">
+      <button type="button" class="add-btn" (click)="addCircuito()" *ngIf="schedaData.circuiti.length < 7">
+        + Aggiungi Circuito
+      </button>
+    </div>
+  </div>
+
+  <!-- Pulsanti Azioni -->
+  <div class="actions">
+    <!-- Pulsante Anteprima -->
+    <button class="action-btn preview-btn" (click)="showPreview()" title="Anteprima">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+      </svg>
+    </button>
+
+    <!-- Pulsante PDF Export -->
+    <button class="action-btn pdf-btn" (click)="exportToPDF()" title="Esporta PDF">
+      <svg class="pdf-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+        <path d="M12,12V19H8V12H12M14,12H16V14H14V12M8,10H16V11H8V10Z"/>
+      </svg>
+    </button>
+
+    <!-- Pulsante Cancella -->
+    <button class="action-btn clear-btn" (click)="clearForm()" title="Cancella tutto">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Modal Aggiungi Esercizio Aerobico -->
+  <div class="modal-overlay" *ngIf="showAddAerobicModal" (click)="closeAddAerobicModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditingAerobico ? 'Modifica' : 'Aggiungi' }} Esercizio Aerobico</h3>
+        <button class="close-btn" (click)="closeAddAerobicModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="aerobic-name">Nome Esercizio:</label>
+          <input type="text" id="aerobic-name" [(ngModel)]="tempAerobicExercise.nome" placeholder="Es. Corsa, Cyclette, Ellittica">
+        </div>
+        
+        <div class="form-group">
+          <label for="aerobic-duration">
+            <span class="duration-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22A9,9 0 0,0 21,13A9,9 0 0,0 12,4M12.5,8H11V14L15.75,16.85L16.5,15.62L12.5,13.25V8M7.88,3.39L6.6,1.86L2,5.71L3.29,7.24L7.88,3.39M22,5.72L17.4,1.86L16.11,3.39L20.71,7.25L22,5.72Z" fill="currentColor" />
+              </svg>
+            </span>
+            Durata:
+          </label>
+          <div class="duration-input-container">
+            <div class="duration-controls">
+              <div class="time-input-group">
+                <input type="number" 
+                       min="0" 
+                       max="23" 
+                       [(ngModel)]="tempDurationHours" 
+                       (ngModelChange)="updateDurationString()"
+                       placeholder="0">
+                <span>h</span>
+              </div>
+              <div class="time-input-group">
+                <input type="number" 
+                       min="0" 
+                       max="59" 
+                       [(ngModel)]="tempDurationMinutes" 
+                       (ngModelChange)="updateDurationString()"
+                       placeholder="0">
+                <span>m</span>
+              </div>
+              <div class="time-input-group">
+                <input type="number" 
+                       min="0" 
+                       max="59" 
+                       [(ngModel)]="tempDurationSeconds" 
+                       (ngModelChange)="updateDurationString()"
+                       placeholder="0">
+                <span>s</span>
+              </div>
+            </div>
+            <div class="duration-display">
+              <span class="duration-result">{{ tempAerobicExercise.durata || 'Imposta durata' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="aerobic-image">Immagine Esercizio:</label>
+          <input type="file" id="aerobic-image" (change)="onTempImageChangeAerobico($event)" accept="image/*">
+          <div class="image-preview" *ngIf="tempAerobicExercise.imagePreview">
+            <img [src]="tempAerobicExercise.imagePreview" alt="Preview esercizio">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="aerobic-note">Note:</label>
+          <textarea id="aerobic-note" [(ngModel)]="tempAerobicExercise.note" placeholder="Inserisci eventuali note specifiche per questo esercizio..." rows="3"></textarea>
+        </div>
+      </div>      <div class="modal-footer">
+        <button type="button" class="cancel-btn" (click)="closeAddAerobicModal()">Annulla</button>
+        <button type="button" class="confirm-btn" (click)="confirmAddAerobicExercise()" [disabled]="!tempAerobicExercise.nome || !tempAerobicExercise.durata">{{ isEditingAerobico ? 'Salva' : 'Aggiungi' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Aggiungi Esercizio Circuito -->
+  <div class="modal-overlay" *ngIf="showAddCircuitExerciseModal" (click)="closeAddCircuitExerciseModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditingCircuito ? 'Modifica' : 'Aggiungi' }} Esercizio al Circuito</h3>
+        <button class="close-btn" (click)="closeAddCircuitExerciseModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="circuit-name">Nome Esercizio:</label>
+          <input type="text" id="circuit-name" [(ngModel)]="tempCircuitExercise.nome" placeholder="Es. Panca piana, Squat, Deadlift">
+        </div>
+        
+        <div class="form-group">
+          <label for="serie-ripetizioni">Serie x Ripetizioni:</label>
+          <div class="serie-ripetizioni-widget">
+            <input type="number"
+                   [(ngModel)]="tempCircuitExercise.serie"
+                   (input)="updateSerieRipetizioniString()"
+                   min="1"
+                   placeholder=""
+                   aria-label="Serie">
+            <span class="x-separator">x</span>
+            <input type="number"
+                   [(ngModel)]="tempCircuitExercise.ripetizioni"
+                   (input)="updateSerieRipetizioniString()"
+                   min="1"
+                   placeholder=""
+                   aria-label="Ripetizioni">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="circuit-recupero">
+            <span class="duration-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22A9,9 0 0,0 21,13A9,9 0 0,0 12,4M12.5,8H11V14L15.75,16.85L16.5,15.62L12.5,13.25V8M7.88,3.39L6.6,1.86L2,5.71L3.29,7.24L7.88,3.39M22,5.72L17.4,1.86L16.11,3.39L20.71,7.25L22,5.72Z" fill="currentColor" />
+              </svg>
+            </span>
+            Recupero:
+          </label>
+          <div class="duration-input-container">
+            <div class="duration-controls">
+              <div class="time-input-group">
+                <input type="number" 
+                       min="0" 
+                       max="23" 
+                       [(ngModel)]="tempRecuperoHours" 
+                       (ngModelChange)="updateRecuperoString()"
+                       placeholder="0">
+                <span>h</span>
+              </div>
+              <div class="time-input-group">
+                <input type="number" 
+                       min="0" 
+                       max="59" 
+                       [(ngModel)]="tempRecuperoMinutes" 
+                       (ngModelChange)="updateRecuperoString()"
+                       placeholder="0">
+                <span>m</span>
+              </div>
+              <div class="time-input-group">
+                <input type="number" 
+                       min="0" 
+                       max="59" 
+                       [(ngModel)]="tempRecuperoSeconds" 
+                       (ngModelChange)="updateRecuperoString()"
+                       placeholder="0">
+                <span>s</span>
+              </div>
+            </div>
+            <div class="duration-display">
+              <span class="duration-result">{{ tempCircuitExercise.recupero || 'Imposta recupero' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="circuit-image">Immagine Esercizio:</label>
+          <input type="file" id="circuit-image" (change)="onTempImageChangeCircuito($event)" accept="image/*">
+          <div class="image-preview" *ngIf="tempCircuitExercise.imagePreview">
+            <img [src]="tempCircuitExercise.imagePreview" alt="Preview esercizio">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="circuit-note">Note:</label>
+          <textarea id="circuit-note" [(ngModel)]="tempCircuitExercise.note" placeholder="Inserisci eventuali note specifiche per questo esercizio..." rows="3"></textarea>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="cancel-btn" (click)="closeAddCircuitExerciseModal()">Annulla</button>
+        <button type="button" class="confirm-btn" (click)="confirmAddCircuitExercise()" [disabled]="!tempCircuitExercise.nome || !tempCircuitExercise.serieRipetizioni">{{ isEditingCircuito ? 'Salva' : 'Aggiungi' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Anteprima -->
+  <div class="preview-modal" *ngIf="showPreviewModal" (click)="closePreview()">
+    <div class="preview-content" (click)="$event.stopPropagation()">
+      <div class="preview-header">
+        <h2>Anteprima Scheda d'Allenamento</h2>
+        <button class="close-btn" (click)="closePreview()">&times;</button>
+      </div>
+      
+      <div class="preview-sheet">
+        <!-- Header con logo e titolo -->
+        <div class="preview-header-row">
+          <div class="preview-logo-area">
+            <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo" class="preview-logo">
+            <div *ngIf="!logoPreview" class="preview-logo-placeholder">LOGO</div>
+          </div>
+          <div class="preview-title-area">
+            <div class="preview-title">SCHEDA D'ALLENAMENTO</div>
+            <div class="preview-client-info">
+              {{ schedaData.nomeCliente }} {{ schedaData.cognomeCliente }}
+            </div>
+            <div class="preview-date-info">
+              <span class="preview-date">Data d'inizio: <span class="preview-date-value">{{ schedaData.dataInizio }}</span></span>
+              <span class="preview-weeks" *ngIf="schedaData.settimane">Settimane: <span class="preview-weeks-value">{{ schedaData.settimane }}</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lavoro Aerobico -->
+        <div class="preview-section-title aerobic-title">LAVORO AEROBICO</div>
+        <div class="preview-aerobic-section" *ngIf="schedaData.lavoroAerobico.length > 0">
+          <div class="preview-aerobic-exercise" *ngFor="let exercise of schedaData.lavoroAerobico; let i = index">
+            <div class="preview-exercise-image">
+              <img *ngIf="exercise.imagePreview" [src]="exercise.imagePreview" alt="Esercizio aerobico">
+              <div *ngIf="!exercise.imagePreview" class="preview-image-placeholder">IMG</div>
+            </div>
+            <div class="preview-exercise-name">
+              {{ exercise.nome }}
+            </div>
+            <div class="preview-exercise-duration">{{ exercise.durata }}</div>
+            <div class="preview-exercise-notes" *ngIf="exercise.note">
+              <small>{{ exercise.note }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Circuiti -->
+        <div *ngFor="let circuito of schedaData.circuiti; let circuitoIndex = index">
+          <div class="preview-section-title circuit-title" [class.blue-bg]="(circuitoIndex + 1) % 2 === 1" [class.yellow-bg]="(circuitoIndex + 1) % 2 === 0">
+            CIRCUITO {{ circuitoIndex + 1 }}: {{ circuito.nome.toUpperCase() }}
+          </div>
+          
+          <div class="preview-circuit-exercises" *ngIf="circuito.esercizi.length > 0">
+            <div class="preview-circuit-row" *ngFor="let row of getExerciseRows(circuito.esercizi)">
+              <div class="preview-circuit-exercise" *ngFor="let esercizio of row; let i = index">
+                <div class="preview-exercise-image">
+                  <img *ngIf="esercizio.imagePreview" [src]="esercizio.imagePreview" alt="Esercizio circuito">
+                  <div *ngIf="!esercizio.imagePreview" class="preview-image-placeholder">IMG</div>
+                </div>
+                <div class="preview-exercise-name">
+                  {{ esercizio.nome }}
+                  <span *ngIf="esercizio.recupero"> - Recupero: {{ esercizio.recupero }}</span>
+                </div>
+                <div class="preview-exercise-reps">{{ esercizio.serieRipetizioni }}</div>
+                <div class="preview-exercise-notes" *ngIf="esercizio.note">
+                  <small>{{ esercizio.note }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>

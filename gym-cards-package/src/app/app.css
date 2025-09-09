@@ -1,0 +1,256 @@
+/* Layout principale con sidebar */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar verticale */
+.sidebar {
+  width: 80px;
+  background: rgba(30, 58, 138, 0.9);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 215, 0, 0.2);
+  box-shadow: 4px 0 20px rgba(30, 58, 138, 0.3);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* Header della sidebar */
+.sidebar-header {
+  padding: 1.5rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(255, 215, 0, 0.1);
+  backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+.logo-container h2 {
+  color: white;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* Navigazione della sidebar */
+.sidebar-nav {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.nav-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  margin: 0;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
+  border-left: 3px solid transparent;
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+  min-width: 32px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon svg {
+  width: 32px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+}
+
+.nav-text {
+  flex: 1;
+}
+
+.nav-link:hover {
+  background: rgba(255, 215, 0, 0.2);
+  backdrop-filter: blur(8px);
+  border-left-color: rgba(255, 215, 0, 0.8);
+  transform: translateX(3px);
+}
+
+.nav-link:hover .nav-icon svg {
+  color: #FFD700;
+  transform: scale(1.2);
+}
+
+.nav-link.active {
+  background: rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border-left-color: #FFD700;
+  box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.nav-link.active .nav-icon svg {
+  color: #FFD700;
+  transform: scale(1.1);
+}
+
+/* Contenuto principale */
+.main-content {
+  flex: 1;
+  margin-left: 80px;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  position: relative;
+}
+
+/* Layout principale */
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* Overlay per mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* Toggle button per mobile */
+.mobile-toggle {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001;
+  background: #1E3A8A;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+  transition: all 0.3s ease;
+}
+
+.mobile-toggle:hover {
+  background: #3B82F6;
+  transform: scale(1.05);
+}
+
+.hamburger {
+  width: 20px;
+  height: 2px;
+  background: white;
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+.mobile-toggle.sidebar-open .hamburger:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-toggle.sidebar-open .hamburger:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-toggle.sidebar-open .hamburger:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mobile-toggle {
+    display: flex;
+  }
+  
+  .sidebar {
+    width: 80px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding-top: 80px; /* Spazio per il toggle button */
+  }
+  
+  .sidebar-header {
+    padding: 1rem 0.5rem;
+  }
+  
+  .logo-container h2 {
+    font-size: 0.8rem;
+  }
+  
+  .nav-link {
+    padding: 1.2rem 0;
+  }
+  
+  .nav-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 60px;
+  }
+  
+  .nav-link {
+    padding: 1rem 0;
+  }
+  
+  .nav-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .logo-container h2 {
+    font-size: 0.7rem;
+  }
+}
