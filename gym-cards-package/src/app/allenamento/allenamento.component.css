@@ -1028,24 +1028,18 @@
 /* Renderemo tutto blu di default, poi i valori li forziamo a nero */
 .preview-date,
 .preview-weeks {
-  border: 1px solid #000;
-  padding: 0.5rem;
-  text-align: center;
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #3b82f6; /* Blu del tema per tutto il contenuto */
-  font-weight: normal; /* Assicuriamoci che le etichette non siano bold */
 }
 
 /* Forziamo i valori specifici a nero e bold */
 .preview-date-value,
 .preview-weeks-value {
   color: #000 !important;
-  font-weight: bold !important;
 }
 
 .preview-header-row {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
+  display: flex;
   border: 1px solid #000;
  }
 
@@ -1056,7 +1050,7 @@
 }
 
 .preview-logo {
-  max-height: 150px;
+  max-height: 112px;
 }
 
 .preview-logo-placeholder {
@@ -1072,50 +1066,42 @@
 }
 
 .preview-title-area {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  margin-left: 10px;
 }
 
 .preview-title {
-  font-size: 1.8rem;
-  font-weight: bold;
+  font-size: 20px;
   color: #000;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
 }
 
 .preview-client-info {
-  font-size: 1.4rem;
-  font-weight: bold;
   color: #000;
-  margin-bottom: 1rem;
 }
-
+/*
 .preview-date-info {
   display: flex;
   justify-content: space-between;
   padding: 2px;
+  font-size:14px;
 }
+  */
+/*
+.preview-week-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px;
+}
+*/ 
 
 .preview-date, .preview-weeks {
-  border: 1px solid #000;
   background: white;
   color: #000 !important;
-  font-weight: bold;
-  flex: 1;
-  text-align: center;
-}
+ }
 
 .preview-section-title {
   background: #fbbf24;
-  color: #000;
-  font-weight: bold;
-  font-size: 1.2rem;
   text-align: center;
-  border: 1px solid #000;
-  text-transform: uppercase;
+  font-weight: bold;
 }
 
 .preview-section-title.blue-bg {
@@ -1269,7 +1255,6 @@
 /* Miglioramenti per la qualità del PDF */
 .preview-sheet {
   font-family: Arial, sans-serif;
-  line-height: 1.4;
 }
 
 .preview-exercise-image img {

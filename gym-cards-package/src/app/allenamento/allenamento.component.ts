@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as ExcelJS from 'exceljs';
 import html2pdf from 'html2pdf.js';
+import { jsPDF } from 'jspdf';
 
 export interface EsercizioCircuito {
   nome: string;
@@ -1085,121 +1086,312 @@ export class AllenamentoComponent {
     console.log('Apertura anteprima...');
     this.showPreviewModal = true;
   }
-
-  // Funzione migliorata per generare PDF che gestisce correttamente i page break
+ /**
+   * NUOVA FUNZIONE EXPORT TO PDF
+   * Usa jsPDF per costruire il documento in modo programmatico, garantendo un layout preciso.
+   */
   async exportToPDF() {
     try {
-      // Assicuriamoci che l'anteprima sia disponibile nel DOM (senza mostrarla)
-      const wasVisible = this.showPreviewModal;
-      this.showPreviewModal = true;
+      // --- IMPOSTAZIONI GENERALI DEL DOCUMENTO ---
+      const doc = new jsPDF('p', 'mm', 'a4'); // Orientamento portrait, unità in mm, formato A4
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      let currentY = margin; // Posizione verticale corrente, parte dal margine superiore
 
-      // Attendi il rendering del DOM
-      await new Promise(resolve => setTimeout(resolve, 400));
-
-      // Preparazione elemento per PDF
-      const element = document.querySelector('.preview-sheet') as HTMLElement;
-      if (!element) {
-        throw new Error('Elemento preview non trovato');
-      }
-
-      // Prepara le regole CSS per i salti di pagina
-      const pageBreakStyles = document.createElement('style');
-      pageBreakStyles.textContent = `
-        /* Evita divisioni tra circuito e prima riga */
-        .preview-section-title {
-          page-break-after: avoid !important;
-          break-after: avoid !important;
-        }
-
-        /* Mantieni insieme titolo e prima riga */
-        .preview-section-title + .preview-circuit-row {
-          page-break-before: avoid !important;
-          page-break-after: auto !important;
-          break-before: avoid !important;
-          break-after: auto !important;
-        }
-
-        /* Evita di dividere una riga di esercizi */
-        .preview-circuit-row {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-
-        /* Forza nuova pagina prima di un circuito se necessario */
-        @media print {
-          .preview-section-title {
-            display: block;
-            position: relative;
-          }
-          
-          /* Usa margini per garantire spazio tra elementi */
-          .preview-circuit-row {
-            margin-bottom: 15mm;
-          }
-        }
-      `;
-      document.head.appendChild(pageBreakStyles);
-
-      // Configura html2pdf con opzioni avanzate per il page break
-      const options = {
-        margin: 10,
-        filename: `Scheda_${this.schedaData.nomeCliente || 'Allenamento'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy'],
-          before: '.avoid-break-before',
-          after: '.avoid-break-after',
-          avoid: '.preview-circuit-row, .preview-section-title + .preview-circuit-row'
+      // Funzione helper per aggiungere una nuova pagina e resettare la Y
+      const addPageIfNeeded = (neededHeight: number) => {
+        if (currentY + neededHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
         }
       };
 
-      // Nascondi UI di controllo per il PDF
-      const closeBtn = element.querySelector('.close-btn');
-      if (closeBtn) (closeBtn as HTMLElement).style.display = 'none';
+    // --- 1. HEADER (LOGO, TITOLO, CLIENTE) ---
+      const headerHeight = 30;
+      addPageIfNeeded(headerHeight);
 
-      // Genera PDF
-      await html2pdf().from(element).set(options).save();
-      
-      // Ripulisci
-      document.head.removeChild(pageBreakStyles);
-      if (closeBtn) (closeBtn as HTMLElement).style.display = '';
-      this.showPreviewModal = wasVisible;
-      
-      console.log('PDF generato con successo');
+      const logoSize = 25;
+      const infoX = margin + logoSize + 5; // Spazio dopo il logo
+      const infoY = currentY + 6; // Piccolo offset per centrare verticalmente il testo rispetto al logo
+
+      // Logo (se presente)
+      if (this.logoPreview) {
+        const imgData = this.logoPreview;
+        const imgExtension = this.getImageExtension(imgData);
+        doc.addImage(imgData, imgExtension, margin, currentY, logoSize, logoSize);
+      }
+
+      // Titolo principale
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text("SCHEDA D'ALLENAMENTO", infoX, infoY, { align: 'left' });
+
+      // Nome Cliente
+      doc.setFontSize(14);
+      doc.text(`${this.schedaData.nomeCliente} ${this.schedaData.cognomeCliente}`, infoX, infoY + 8, { align: 'left' });
+
+      // Data Inizio e Settimane (vicini)
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Data Inizio:', infoX, infoY + 16, { align: 'left' });
+      doc.setFont('helvetica', 'normal');
+      doc.text(` ${this.schedaData.dataInizio}`, infoX + 20, infoY + 16, { align: 'left' });
+
+      if (this.schedaData.settimane) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Settimane:', infoX + 45, infoY + 16, { align: 'left' });
+        doc.setFont('helvetica', 'normal');
+        doc.text(` ${this.schedaData.settimane}`, infoX + 65, infoY + 16, { align: 'left' });
+      }
+      currentY += logoSize + 5; // Aggiorna la posizione verticale dopo il logo
+
+      // --- 2. SEZIONE LAVORO AEROBICO ---
+      if (this.schedaData.lavoroAerobico.length > 0) {
+        const aerobicSectionHeight = 65; // Altezza stimata (titolo + 1 riga di esercizi)
+        addPageIfNeeded(aerobicSectionHeight);
+
+        // Titolo sezione
+        doc.setFillColor('#FFC107'); // Giallo
+        doc.rect(margin, currentY, pageWidth - (margin * 2), 10, 'F'); // x, y, larg, alt, stile
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('LAVORO AEROBICO', pageWidth / 2, currentY + 7, { align: 'center' });
+        currentY += 12;
+
+        // Esercizi (layout a 3 colonne)
+        const colWidth = (pageWidth - margin * 2) / 3;
+        this.schedaData.lavoroAerobico.forEach((esercizio, index) => {
+          const colIndex = index % 3;
+          const xPos = margin + colIndex * colWidth;
+
+          // Immagine
+          if (esercizio.imagePreview) {
+            doc.addImage(esercizio.imagePreview, this.getImageExtension(esercizio.imagePreview), xPos + 5, currentY, 50, 30);
+          }
+          doc.rect(xPos + 5, currentY, 50, 30); // Bordo intorno all'immagine
+
+          // Testi
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(esercizio.nome, xPos + 30, currentY + 35, { align: 'center' });
+
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.text(esercizio.durata, xPos + 30, currentY + 40, { align: 'center' });
+          
+          if(esercizio.note) {
+              doc.setFont('helvetica', 'italic');
+              // Il metodo text gestisce il wrapping automatico se si fornisce una larghezza massima
+              const noteLines = doc.splitTextToSize(esercizio.note, colWidth - 10);
+              doc.text(noteLines, xPos + 30, currentY + 45, { align: 'center' });
+          }
+        });
+        currentY += aerobicSectionHeight - 12; // Aggiorna Y dopo la sezione
+      }
+      /*
+         // --- 2. SEZIONE LAVORO AEROBICO ---
+      if ( this.schedaData.circuiti.length > 0) {
+        const circuitoSectionHeight = 65; // Altezza stimata (titolo + 1 riga di esercizi)
+        addPageIfNeeded(circuitoSectionHeight);
+
+        // Titolo sezione
+        doc.setFillColor('#FFC107'); // Giallo
+        doc.rect(margin, currentY, pageWidth - (margin * 2), 10, 'F'); // x, y, larg, alt, stile
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('LAVORO AEROBICO', pageWidth / 2, currentY + 7, { align: 'center' });
+        currentY += 12;
+
+        // Esercizi (layout a 3 colonne)
+        const colWidth = (pageWidth - margin * 2) / 3;
+        this.schedaData.lavoroAerobico.forEach((esercizio, index) => {
+          const colIndex = index % 3;
+          const xPos = margin + colIndex * colWidth;
+
+          // Immagine
+          if (esercizio.imagePreview) {
+            doc.addImage(esercizio.imagePreview, this.getImageExtension(esercizio.imagePreview), xPos + 5, currentY, 50, 30);
+          }
+          doc.rect(xPos + 5, currentY, 50, 30); // Bordo intorno all'immagine
+
+          // Testi
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(esercizio.nome, xPos + 30, currentY + 35, { align: 'center' });
+
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.text(esercizio.durata, xPos + 30, currentY + 40, { align: 'center' });
+          
+          if(esercizio.note) {
+              doc.setFont('helvetica', 'italic');
+              // Il metodo text gestisce il wrapping automatico se si fornisce una larghezza massima
+              const noteLines = doc.splitTextToSize(esercizio.note, colWidth - 10);
+              doc.text(noteLines, xPos + 30, currentY + 45, { align: 'center' });
+          }
+        });
+        currentY += circuitoSectionHeight - 12; // Aggiorna Y dopo la sezione
+      }
+      */
+      // --- 3. SEZIONE CIRCUITI (stile lavoro aerobico) ---
+      if (this.schedaData.circuiti.length > 0) {
+        this.schedaData.circuiti.forEach((circuito, circuitoIndex) => {
+          // Titolo circuito
+          addPageIfNeeded(15);
+          doc.setFillColor(circuitoIndex % 2 === 0 ? '#2196F3' : '#FFC107'); // Blu alternato a giallo
+          doc.rect(margin, currentY, pageWidth - (margin * 2), 10, 'F');
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(
+            `CIRCUITO ${circuitoIndex + 1}: ${circuito.nome.toUpperCase()}`,
+            pageWidth / 2,
+            currentY + 7,
+            { align: 'center' }
+          );
+          currentY += 12;
+
+          // Esercizi del circuito (max 3 per riga)
+          const colWidth = (pageWidth - margin * 2) / 3;
+          circuito.esercizi.forEach((esercizio, index) => {
+            const colIndex = index % 3;
+            const xPos = margin + colIndex * colWidth;
+
+            // Immagine
+            if (esercizio.imagePreview) {
+              doc.addImage(
+                esercizio.imagePreview,
+                this.getImageExtension(esercizio.imagePreview),
+                xPos + 5,
+                currentY,
+                50,
+                30
+              );
+            }
+            doc.rect(xPos + 5, currentY, 50, 30);
+
+            // Nome + serie x ripetizioni
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text(
+              `${esercizio.nome} - ${esercizio.serieRipetizioni}`,
+              xPos + 30,
+              currentY + 35,
+              { align: 'center' }
+            );
+
+            // Recupero
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            if (esercizio.recupero) {
+              doc.text(
+                `Recupero: ${esercizio.recupero}`,
+                xPos + 30,
+                currentY + 40,
+                { align: 'center' }
+              );
+            }
+
+            // Note
+            if (esercizio.note) {
+              doc.setFont('helvetica', 'italic');
+              const noteLines = doc.splitTextToSize(esercizio.note, colWidth - 10);
+              doc.text(noteLines, xPos + 30, currentY + 45, { align: 'center' });
+            }
+
+            // Vai a nuova riga ogni 3 esercizi
+            if (colIndex === 2 || index === circuito.esercizi.length - 1) {
+              currentY += 55;
+              addPageIfNeeded(55);
+            }
+          });
+          currentY += 5; // Spazio dopo ogni circuito
+        });
+      }
+      /*
+      // --- 3. GRIGLIA PESI PER OGNI CIRCUITO ---
+      this.schedaData.circuiti.forEach((circuito, circuitoIndex) => {
+        // Titolo del foglio griglia pesi
+        addPageIfNeeded(20);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 128);
+        doc.text(`Circuito ${circuitoIndex + 1} - Griglia Pesi`, pageWidth / 2, currentY + 7, { align: 'center' });
+        currentY += 10;
+
+        // Parametri tabella
+        const maxColonne = Math.max(circuito.esercizi.length, 10); // almeno 10 colonne per leggibilità
+        const colonneEffettive = Math.max(circuito.esercizi.length, 10);
+        const colWidth = (pageWidth - margin * 2) / colonneEffettive;
+        const rowHeight = 6;
+        const numSessioni = 38;
+
+        // Header: nomi esercizi (o celle vuote)
+        addPageIfNeeded(rowHeight);
+        for (let col = 0; col < colonneEffettive; col++) {
+          const x = margin + col * colWidth;
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.2);
+          doc.rect(x, currentY, colWidth, rowHeight);
+          doc.text(
+            col < circuito.esercizi.length ? circuito.esercizi[col].nome : '',
+            x + colWidth / 2,
+            currentY + rowHeight - 2,
+            { align: 'center' }
+          );
+        }
+        currentY += rowHeight;
+
+        // Righe vuote per le sessioni
+        for (let r = 0; r < numSessioni; r++) {
+          addPageIfNeeded(rowHeight);
+          for (let col = 0; col < colonneEffettive; col++) {
+            const x = margin + col * colWidth;
+            doc.setDrawColor(0);
+            doc.setLineWidth(0.2);
+            doc.rect(x, currentY, colWidth, rowHeight);
+            // Lascia vuoto per la scrittura manuale
+          }
+          currentY += rowHeight;
+        }
+
+        // Spazio dopo la tabella
+        currentY += 5;
+      });
+      */
+      // --- 4. SALVATAGGIO DEL FILE ---
+      const nomeFile = `Scheda_${this.schedaData.nomeCliente || 'Allenamento'}.pdf`;
+      doc.save(nomeFile);
+
+      console.log('PDF generato con successo usando jsPDF!');
+
     } catch (err) {
-      console.error('Errore generazione PDF:', err);
-      this.showPreviewModal = false;
+      console.error('Errore durante la generazione del PDF con jsPDF:', err);
       alert(`Errore generazione PDF: ${err instanceof Error ? err.message : 'errore sconosciuto'}`);
     }
   }
 
+
+  // Il resto del codice rimane invariato...
   closePreview() {
     this.showPreviewModal = false;
   }
 
-  // Metodo per calcolare l'altezza dinamica delle note in base al contenuto
   calculateNoteHeight(noteText: string): number {
     if (!noteText || !noteText.trim()) {
-      return 20; // Altezza minima
+      return 20;
     }
-    
-    // Calcola l'altezza in base alla lunghezza del testo
-    // Assumendo circa 40 caratteri per riga e 20px di altezza per riga
     const charactersPerLine = 40;
     const lineHeight = 20;
     const minHeight = 20;
     const maxHeight = 120;
-    
     const estimatedLines = Math.ceil(noteText.length / charactersPerLine);
-    const calculatedHeight = estimatedLines * lineHeight + 16; // +16 per padding
-    
+    const calculatedHeight = estimatedLines * lineHeight + 16;
     return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
   }
 }

@@ -374,11 +374,12 @@
             </div>
             <div class="preview-date-info">
               <span class="preview-date">Data d'inizio: <span class="preview-date-value">{{ schedaData.dataInizio }}</span></span>
+            </div>
+            <div class="preview-weeks-info">
               <span class="preview-weeks" *ngIf="schedaData.settimane">Settimane: <span class="preview-weeks-value">{{ schedaData.settimane }}</span></span>
             </div>
           </div>
         </div>
-
         <!-- Lavoro Aerobico -->
         <div class="preview-section-title aerobic-title">LAVORO AEROBICO</div>
         <div class="preview-aerobic-section" *ngIf="schedaData.lavoroAerobico.length > 0">
